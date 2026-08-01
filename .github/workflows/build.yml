@@ -2,13 +2,8 @@ name: Build
 
 on:
   push:
-<<<<<<< HEAD
-    tags: ["v*"]          
-  workflow_dispatch: {}  
-=======
     tags: ["v*"]
   workflow_dispatch: {}
->>>>>>> adad764 (CI: fix macOS runner label and Windows console encoding)
 
 permissions:
   contents: write
@@ -25,11 +20,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-<<<<<<< HEAD
-          - os: ubuntu-22.04   
-=======
           - os: ubuntu-22.04
->>>>>>> adad764 (CI: fix macOS runner label and Windows console encoding)
             label: linux-x86_64
           - os: macos-14           # Apple Silicon
             label: macos-arm64
@@ -60,10 +51,6 @@ jobs:
       - name: Build
         run: pyinstaller gif_forge.spec --noconfirm
 
-<<<<<<< HEAD
-     
-=======
->>>>>>> adad764 (CI: fix macOS runner label and Windows console encoding)
       - name: Sign and package (macOS)
         if: runner.os == 'macOS'
         run: |
