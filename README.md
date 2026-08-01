@@ -3,7 +3,7 @@
 Create and compress GIF animations through a graphical interface, with preview.
 
 Converts video files or PNG image sequences to GIF. Uses `ffmpeg` for frame extraction
-and `gifski` for palette generation and encoding. Both are bundled — nothing to install.
+and `gifski` for palette generation and encoding. Both are bundled.
 
 ## Download
 
