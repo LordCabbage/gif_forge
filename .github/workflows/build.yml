@@ -1,0 +1,87 @@
+name: Build
+
+on:
+  push:
+    tags: ["v*"]          # тег v1.0.0 → соберёт и опубликует релиз
+  workflow_dispatch: {}   # можно запустить руками из вкладки Actions
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: ${{ matrix.label }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04    # старый glibc = совместимость с большим числом дистрибутивов
+            label: linux-x86_64
+          - os: macos-14        # Apple Silicon
+            label: macos-arm64
+          - os: macos-13        # Intel
+            label: macos-x86_64
+          - os: windows-latest
+            label: windows-x86_64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller==6.11.1
+
+      - name: Fetch ffmpeg / ffprobe / gifski
+        run: python scripts/fetch_binaries.py
+
+      - name: Build
+        run: pyinstaller gif_forge.spec --noconfirm
+
+      # ---- macOS: ad-hoc подпись, иначе на Apple Silicon .app просто не стартует
+      - name: Sign and package (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          chmod +x dist/GifForge.app/Contents/Frameworks/bin/* || true
+          chmod +x dist/GifForge.app/Contents/Resources/bin/*  || true
+          codesign --force --deep --sign - dist/GifForge.app
+          ditto -c -k --keepParent dist/GifForge.app GifForge-${{ matrix.label }}.zip
+
+      - name: Package (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          chmod +x dist/GifForge/_internal/bin/* || true
+          tar -czf GifForge-${{ matrix.label }}.tar.gz -C dist GifForge
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Compress-Archive -Path dist/GifForge -DestinationPath GifForge-${{ matrix.label }}.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GifForge-${{ matrix.label }}
+          path: |
+            GifForge-*.zip
+            GifForge-*.tar.gz
+          if-no-files-found: error
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
+          generate_release_notes: true
