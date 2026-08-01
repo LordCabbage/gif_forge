@@ -2,8 +2,8 @@ name: Build
 
 on:
   push:
-    tags: ["v*"]          # тег v1.0.0 → соберёт и опубликует релиз
-  workflow_dispatch: {}   # можно запустить руками из вкладки Actions
+    tags: ["v*"]          
+  workflow_dispatch: {}  
 
 permissions:
   contents: write
@@ -16,7 +16,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-22.04    # старый glibc = совместимость с большим числом дистрибутивов
+          - os: ubuntu-22.04   
             label: linux-x86_64
           - os: macos-14        # Apple Silicon
             label: macos-arm64
@@ -43,7 +43,7 @@ jobs:
       - name: Build
         run: pyinstaller gif_forge.spec --noconfirm
 
-      # ---- macOS: ad-hoc подпись, иначе на Apple Silicon .app просто не стартует
+     
       - name: Sign and package (macOS)
         if: runner.os == 'macOS'
         run: |
