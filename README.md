@@ -57,19 +57,6 @@ python gif_forge.py
 `bin/` is gitignored. `tool_path()` checks `./bin/` first, then `PATH` — if the three
 tools are already installed system-wide, skip the fetch step.
 
-## Build
-
-```bash
-pip install pyinstaller
-python scripts/fetch_binaries.py
-pyinstaller gif_forge.spec --noconfirm
-```
-
-
-```bash
-git tag v1.0.0
-git push origin v1.0.0
-```
 
 ## License
 
