@@ -61,9 +61,3 @@ tools are already installed system-wide, skip the fetch step.
 ## License
 
 AGPL-3.0.
-
-`gifski` is AGPL-3.0 (its author offers commercial licensing separately). Since its
-binary ships inside every build, the distribution as a whole is AGPL-3.0.
-
-Static ffmpeg builds come from
-[eugeneware/ffmpeg-static](https://github.com/eugeneware/ffmpeg-static) (GPL).
