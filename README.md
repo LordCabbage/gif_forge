@@ -45,7 +45,7 @@ sudo apt install libxcb-cursor0 libxkbcommon-x11-0 libegl1
 ## Run from source
 
 ```bash
-git clone https://github.com/<user>/gif-forge
+git clone https://github.com/LordCabbage/gif-forge
 cd gif-forge
 python -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
