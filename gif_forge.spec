@@ -1,13 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
-"""
-PyInstaller spec для GIF Forge.
 
-    pyinstaller gif_forge.spec --noconfirm
-
-Собирает onedir: dist/GifForge/ (Linux, Windows) или dist/GifForge.app (macOS).
-Бинарники ffmpeg/ffprobe/gifski кладутся в bin/ внутри бандла — их находит
-tool_path() из gif_forge.py через sys._MEIPASS.
-"""
 
 import sys
 from pathlib import Path
@@ -17,11 +9,10 @@ BIN = ROOT / "bin"
 
 if not BIN.is_dir() or not any(BIN.iterdir()):
     raise SystemExit(
-        "Каталог bin/ пуст. Сначала выполни: python scripts/fetch_binaries.py"
+        "catalog is emoty. Do: python scripts/fetch_binaries.py"
     )
 
-# Кладём как datas, а не binaries: PyInstaller не пытается переписывать
-# rpath/load-команды готовых статических бинарников (важно для macOS).
+
 tool_payload = [(str(p), "bin") for p in BIN.iterdir() if p.is_file()]
 
 a = Analysis(
@@ -53,9 +44,9 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=False,          # UPX ломает подпись на macOS и триггерит антивирусы на Windows
-    console=False,      # GUI-приложение, без окна консоли
-    icon=None,          # положи сюда путь к .ico / .icns, когда будет иконка
+    upx=False,          
+    console=False,     
+    icon=None,         
 )
 
 coll = COLLECT(
@@ -72,7 +63,7 @@ if sys.platform == "darwin":
         coll,
         name="GifForge.app",
         icon=None,
-        bundle_identifier="io.github.gifforge",
+        bundle_identifier="io.github.LordCabbage.gifforge",
         info_plist={
             "CFBundleName": "GIF Forge",
             "CFBundleDisplayName": "GIF Forge",
