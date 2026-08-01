@@ -36,16 +36,16 @@ def detect() -> tuple[str, str]:
         return ("darwin-arm64" if arm else "darwin-x64"), "mac"
     if sys.platform.startswith("linux"):
         if arm:
-            sys.exit("Linux arm64: no gifski bin, do cargo install gifski")
+            sys.exit("Linux arm64: no prebuilt gifski binary, use: cargo install gifski")
         return "linux-x64", "linux"
     if sys.platform == "win32":
         return "win32-x64", "win"
-    sys.exit(f"unsapported platform: {sys.platform}")
+    sys.exit(f"Unsupported platform: {sys.platform}")
 
 
 
 def download(url: str, dest: Path) -> None:
-    print(f"  ↓ {url}")
+    print(f"  downloading {url}", flush=True)
     dest.parent.mkdir(parents=True, exist_ok=True)
     with urllib.request.urlopen(url) as r, open(dest, "wb") as f:
         shutil.copyfileobj(r, f)
@@ -59,7 +59,7 @@ def fetch_ffmpeg(slug: str, exe_suffix: str) -> None:
     for name in ("ffmpeg", "ffprobe"):
         target = BIN / f"{name}{exe_suffix}"
         if target.exists():
-            print(f"  = {target.name} уже на месте")
+            print(f"  skip {target.name} (already present)", flush=True)
             continue
         gz = BIN / f"{name}.gz"
         download(f"{FFMPEG_BASE}/{name}-{slug}.gz", gz)
@@ -67,13 +67,13 @@ def fetch_ffmpeg(slug: str, exe_suffix: str) -> None:
             shutil.copyfileobj(src, dst)
         gz.unlink()
         make_executable(target)
-        print(f"  ✓ {target.name}")
+        print(f"  ok   {target.name}", flush=True)
 
 
 def fetch_gifski(subdir: str, exe_suffix: str) -> None:
     target = BIN / f"gifski{exe_suffix}"
     if target.exists():
-        print(f"  = {target.name} уже на месте")
+        print(f"  skip {target.name} (already present)", flush=True)
         return
     with tempfile.TemporaryDirectory() as tmp:
         archive = Path(tmp) / "gifski.tar.xz"
@@ -82,22 +82,22 @@ def fetch_gifski(subdir: str, exe_suffix: str) -> None:
             member = f"{subdir}/gifski{exe_suffix}"
             src = tar.extractfile(member)
             if src is None:
-                sys.exit(f"В архиве gifski нет {member}")
+                sys.exit(f"gifski archive has no {member}")
             BIN.mkdir(parents=True, exist_ok=True)
             with open(target, "wb") as dst:
                 shutil.copyfileobj(src, dst)
     make_executable(target)
-    print(f"  ✓ {target.name}")
+    print(f"  ok   {target.name}", flush=True)
 
 
 def main() -> None:
     slug, gifski_dir = detect()
     exe_suffix = ".exe" if sys.platform == "win32" else ""
-    print(f"Платформа: {slug}")
+    print(f"Platform: {slug}", flush=True)
     BIN.mkdir(parents=True, exist_ok=True)
     fetch_ffmpeg(slug, exe_suffix)
     fetch_gifski(gifski_dir, exe_suffix)
-    print(f"\nDone. bin files at {BIN}")
+    print(f"\nDone. Binaries in {BIN}", flush=True)
 
 
 if __name__ == "__main__":
