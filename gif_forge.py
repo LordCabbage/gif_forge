@@ -1,4 +1,5 @@
 
+
 from __future__ import annotations
 
 import os
@@ -15,11 +16,14 @@ from typing import List, Optional
 from PyQt6.QtCore import QObject, QSize, Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QMovie
 from PyQt6.QtWidgets import (
-    QAbstractItemView, QApplication, QComboBox, QFileDialog, QGridLayout,
+    QAbstractItemView, QApplication, QComboBox, QFileDialog,
+    QGraphicsOpacityEffect, QGridLayout,
     QGroupBox, QHBoxLayout, QLabel, QLineEdit, QListWidget, QListWidgetItem,
     QMainWindow, QMessageBox, QProgressBar, QPushButton, QSlider, QSpinBox,
     QTabWidget, QVBoxLayout, QWidget,
 )
+
+
 
 WIDTH_PRESETS = [
     ("Original", 0),
@@ -43,11 +47,14 @@ FPS_PRESETS = [
 ]
 
 
+
 IS_WINDOWS = sys.platform == "win32"
 _EXE = ".exe" if IS_WINDOWS else ""
 
+# CREATE_NO_WINDOW — чтобы на Windows не мигало чёрное окно консоли
 _NO_WINDOW = {"creationflags": 0x08000000} if IS_WINDOWS else {}
 
+# Общие kwargs для всех дочерних процессов: не падать на не-UTF8 выводе ffmpeg
 _TEXT_IO = {"encoding": "utf-8", "errors": "replace"}
 
 
@@ -60,6 +67,7 @@ def _app_dir() -> Path:
 def tool_path(name: str) -> Optional[str]:
     local = _app_dir() / "bin" / (name + _EXE)
     if local.is_file():
+        # PyInstaller иногда теряет бит +x при распаковке datas — чиним на месте
         if not IS_WINDOWS and not os.access(local, os.X_OK):
             try:
                 local.chmod(local.stat().st_mode | 0o755)
@@ -127,9 +135,9 @@ def probe_image_size(path: str) -> Optional[tuple[int, int]]:
 @dataclass
 class ConversionSettings:
     output_path: str
-    width: int          
-    fps: float         
-    quality: int        
+    width: int          # 0 = original
+    fps: float          # 0 = original
+    quality: int        # 1..100
     video_path: Optional[str] = None
     image_paths: List[str] = field(default_factory=list)
 
@@ -281,7 +289,6 @@ class GifForge(QMainWindow):
         self._build_ui()
         self._check_dependencies()
 
-    # ---- UI ----------------------------------------------------------------
 
     def _build_ui(self):
         central = QWidget()
@@ -419,6 +426,14 @@ class GifForge(QMainWindow):
         self.open_folder_btn.clicked.connect(self._open_output_folder)
         row.addWidget(self.open_folder_btn)
         row.addStretch()
+
+        signature = QLabel("created by cabbage to VJ")
+        signature.setStyleSheet("font-size: 10px; padding-right: 2px;")
+        fade = QGraphicsOpacityEffect(signature)
+        fade.setOpacity(0.10)
+        signature.setGraphicsEffect(fade)
+        row.addWidget(signature)
+
         lay.addLayout(row)
         return g
 
@@ -455,7 +470,6 @@ class GifForge(QMainWindow):
         _, val = FPS_PRESETS[self.fps_combo.currentIndex()]
         return float(self.fps_custom.value()) if val == -1 else val
 
-    # ---- inputs ------------------------------------------------------------
 
     def _pick_video(self):
         path, _ = QFileDialog.getOpenFileName(
@@ -535,7 +549,6 @@ class GifForge(QMainWindow):
                 return
             default = "output.gif"
 
-        # Validate image dimensions consistency in image mode
         if not is_video:
             paths = [self.image_list.item(i).text() for i in range(self.image_list.count())]
             sizes = {probe_image_size(p) for p in paths}
@@ -618,7 +631,6 @@ class GifForge(QMainWindow):
         # Show short summary; full stderr context lives in `msg`
         QMessageBox.critical(self, "Conversion error", msg)
 
- 
 
     def _show_preview(self, path: str):
         movie = QMovie(path)
