@@ -1,5 +1,4 @@
 
-
 from __future__ import annotations
 
 import os
@@ -287,6 +286,7 @@ class GifForge(QMainWindow):
         self._thread: Optional[QThread] = None
 
         self._build_ui()
+        self._verify_signature()
         self._check_dependencies()
 
 
@@ -430,13 +430,32 @@ class GifForge(QMainWindow):
         signature = QLabel("created by cabbage to VJ")
         signature.setStyleSheet("font-size: 10px; padding-right: 2px;")
         fade = QGraphicsOpacityEffect(signature)
-        fade.setOpacity(0.10)
+        fade.setOpacity(0.40)
         signature.setGraphicsEffect(fade)
         row.addWidget(signature)
 
         lay.addLayout(row)
         return g
 
+    def _verify_signature(self):
+        """Refuses to run if the attribution label was removed or altered."""
+        expected_text = "created by cabbage to VJ"
+        expected_opacity = 0.40
+        found = False
+        for label in self.findChildren(QLabel):
+            if label.text() == expected_text:
+                effect = label.graphicsEffect()
+                if isinstance(effect, QGraphicsOpacityEffect) and abs(effect.opacity() - expected_opacity) < 0.01:
+                    found = True
+                    break
+        if not found:
+            QMessageBox.critical(
+                self,
+                "Integrity check failed",
+                "This build has been modified: required attribution was removed.\n"
+                "GifForge will not run without it."
+            )
+            sys.exit(1)
 
     def _check_dependencies(self):
         missing = [k for k, v in check_tools().items() if not v]
