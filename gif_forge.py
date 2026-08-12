@@ -706,6 +706,7 @@ class GifForge(QMainWindow):
         except OSError as e:
             QMessageBox.critical(self, "Save failed", str(e))
             return
+        self._output_path = path
         self.status.setText("Saved")
 
     def _open_output_folder(self):
