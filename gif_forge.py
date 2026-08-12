@@ -458,9 +458,9 @@ class GifForge(QMainWindow):
         row.addStretch()
 
         signature = QLabel("created by Cabbage to VJ")
-        signature.setStyleSheet("font-size: 15px; padding-right: 4px;")
+        signature.setStyleSheet("font-size: 13px; padding-right: 4px;")
         fade = QGraphicsOpacityEffect(signature)
-        fade.setOpacity(0.80)
+        fade.setOpacity(0.5)
         signature.setGraphicsEffect(fade)
         row.addWidget(signature)
 
@@ -470,7 +470,7 @@ class GifForge(QMainWindow):
     def _verify_signature(self):
         """Refuses to run if the attribution label was removed or altered."""
         expected_text = "created by Cabbage to VJ"
-        expected_opacity = 0.80
+        expected_opacity = 0.5
         found = False
         for label in self.findChildren(QLabel):
             if label.text() == expected_text:
