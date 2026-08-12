@@ -328,16 +328,6 @@ class GifForge(QMainWindow):
 
         root.addWidget(self._build_preview(), stretch=1)
 
-        sig_row = QHBoxLayout()
-        sig_row.addStretch()
-        signature = QLabel("created by Cabbage to VJ")
-        signature.setStyleSheet("font-size: 15px; padding-right: 2px;")
-        fade = QGraphicsOpacityEffect(signature)
-        fade.setOpacity(0.80)
-        signature.setGraphicsEffect(fade)
-        sig_row.addWidget(signature)
-        root.addLayout(sig_row)
-
     def _build_video_tab(self) -> QWidget:
         w = QWidget()
         lay = QVBoxLayout(w)
@@ -434,16 +424,23 @@ class GifForge(QMainWindow):
         lay.addWidget(self.preview_info)
 
         row = QHBoxLayout()
+        self.save_btn = QPushButton("Save")
+        self.save_btn.setEnabled(False)
+        self.save_btn.clicked.connect(self._on_save)
+        row.addWidget(self.save_btn)
+
         self.open_folder_btn = QPushButton("Show in folder")
         self.open_folder_btn.setEnabled(False)
         self.open_folder_btn.clicked.connect(self._open_output_folder)
         row.addWidget(self.open_folder_btn)
-
-        self.save_btn = QPushButton("Save…")
-        self.save_btn.setEnabled(False)
-        self.save_btn.clicked.connect(self._on_save)
-        row.addWidget(self.save_btn)
         row.addStretch()
+
+        signature = QLabel("created by Cabbage to VJ")
+        signature.setStyleSheet("font-size: 15px; padding-right: 4px;")
+        fade = QGraphicsOpacityEffect(signature)
+        fade.setOpacity(0.80)
+        signature.setGraphicsEffect(fade)
+        row.addWidget(signature)
 
         lay.addLayout(row)
         return g
