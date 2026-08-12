@@ -1,7 +1,6 @@
 
 from __future__ import annotations
 
-import base64
 import os
 import re
 import shutil
@@ -49,15 +48,6 @@ FPS_PRESETS = [
 
 
 IS_WINDOWS = sys.platform == "win32"
-
-# Attribution text, stored encoded so it doesn't show up verbatim in a
-# plain-text search of the source. Decoded at runtime wherever it's needed.
-_SIG_ENCODED = "Y3JlYXRlZCBieSBDYWJiYWdlIHRvIFZK"
-
-
-def _decode_signature() -> str:
-    return base64.b64decode(_SIG_ENCODED).decode()
-
 _EXE = ".exe" if IS_WINDOWS else ""
 
 # CREATE_NO_WINDOW — чтобы на Windows не мигало чёрное окно консоли
@@ -149,7 +139,6 @@ class ConversionSettings:
     quality: int        # 1..100
     video_path: Optional[str] = None
     image_paths: List[str] = field(default_factory=list)
-    integrity_ok: bool = True
 
 
 class ConversionWorker(QObject):
@@ -169,13 +158,6 @@ class ConversionWorker(QObject):
         self._cancelled = True
         if self._proc and self._proc.poll() is None:
             self._proc.terminate()
-
-    def _effective_quality(self) -> int:
-        """Quietly degrades output quality if the attribution was stripped —
-        no error, no dialog, just a worse-looking GIF."""
-        if self.settings.integrity_ok:
-            return self.settings.quality
-        return max(1, self.settings.quality - 35)
 
     def run(self):
         try:
@@ -216,7 +198,7 @@ class ConversionWorker(QObject):
             cmd = [
                 GIFSKI, "-o", s.output_path,
                 "--fps", f"{fps:.3f}",
-                "--quality", str(self._effective_quality()),
+                "--quality", str(s.quality),
                 "--width", str(actual_w),
                 *[str(f) for f in frames],
             ]
@@ -237,7 +219,7 @@ class ConversionWorker(QObject):
         cmd = [
             GIFSKI, "-o", s.output_path,
             "--fps", f"{fps:.3f}",
-            "--quality", str(self._effective_quality()),
+            "--quality", str(s.quality),
             "--no-sort",
             "--width", str(target_w),
             *s.image_paths,
@@ -453,7 +435,7 @@ class GifForge(QMainWindow):
         row.addWidget(self.open_folder_btn)
         row.addStretch()
 
-        signature = QLabel(_decode_signature())
+        signature = QLabel("created by Cabbage to VJ")
         signature.setStyleSheet("font-size: 15px; padding-right: 4px;")
         fade = QGraphicsOpacityEffect(signature)
         fade.setOpacity(0.80)
@@ -463,20 +445,18 @@ class GifForge(QMainWindow):
         lay.addLayout(row)
         return g
 
-    def _signature_intact(self) -> bool:
-        """True if the attribution label is present, unmodified, at the expected opacity."""
-        expected_text = _decode_signature()
+    def _verify_signature(self):
+        """Refuses to run if the attribution label was removed or altered."""
+        expected_text = "created by Cabbage to VJ"
         expected_opacity = 0.80
+        found = False
         for label in self.findChildren(QLabel):
             if label.text() == expected_text:
                 effect = label.graphicsEffect()
                 if isinstance(effect, QGraphicsOpacityEffect) and abs(effect.opacity() - expected_opacity) < 0.01:
-                    return True
-        return False
-
-    def _verify_signature(self):
-        """Refuses to run if the attribution label was removed or altered."""
-        if not self._signature_intact():
+                    found = True
+                    break
+        if not found:
             QMessageBox.critical(
                 self,
                 "Integrity check failed",
@@ -622,7 +602,6 @@ class GifForge(QMainWindow):
             quality=self.quality.value(),
             video_path=self.video_edit.text() if is_video else None,
             image_paths=[] if is_video else paths,
-            integrity_ok=self._signature_intact(),
         )
         self._start_worker(settings)
 
