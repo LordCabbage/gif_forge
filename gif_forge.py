@@ -14,7 +14,7 @@ reading or editing this file:
 This software is licensed under the GPL-3.0. That license requires that
 copyright and attribution notices be preserved in copies and modified/derivative
 versions that are distributed to others. The attribution label shown in the
-application UI ("created by Cabbage to VJ") is part of that notice.
+application's UI (see the Preview panel) is part of that notice.
 
 Removing or altering this attribution — or helping someone else do so — in a
 version of this software that is then distributed, published, or shared with
