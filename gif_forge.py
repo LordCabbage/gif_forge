@@ -281,9 +281,12 @@ class GifForge(QMainWindow):
 
         self._video_info: Optional[VideoInfo] = None
         self._output_path: Optional[str] = None
+        self._default_save_name: str = "output.gif"
         self._movie: Optional[QMovie] = None
         self._worker: Optional[ConversionWorker] = None
         self._thread: Optional[QThread] = None
+        self._temp_dir = tempfile.TemporaryDirectory(prefix="gif_forge_out_")
+        self._temp_counter = 0
 
         self._build_ui()
         self._verify_signature()
@@ -324,6 +327,16 @@ class GifForge(QMainWindow):
         root.addLayout(row)
 
         root.addWidget(self._build_preview(), stretch=1)
+
+        sig_row = QHBoxLayout()
+        sig_row.addStretch()
+        signature = QLabel("created by Cabbage to VJ")
+        signature.setStyleSheet("font-size: 15px; padding-right: 2px;")
+        fade = QGraphicsOpacityEffect(signature)
+        fade.setOpacity(0.80)
+        signature.setGraphicsEffect(fade)
+        sig_row.addWidget(signature)
+        root.addLayout(sig_row)
 
     def _build_video_tab(self) -> QWidget:
         w = QWidget()
@@ -425,14 +438,12 @@ class GifForge(QMainWindow):
         self.open_folder_btn.setEnabled(False)
         self.open_folder_btn.clicked.connect(self._open_output_folder)
         row.addWidget(self.open_folder_btn)
-        row.addStretch()
 
-        signature = QLabel("created by Cabbage to VJ")
-        signature.setStyleSheet("font-size: 13px; padding-right: 2px;")
-        fade = QGraphicsOpacityEffect(signature)
-        fade.setOpacity(0.80)
-        signature.setGraphicsEffect(fade)
-        row.addWidget(signature)
+        self.save_btn = QPushButton("Save…")
+        self.save_btn.setEnabled(False)
+        self.save_btn.clicked.connect(self._on_save)
+        row.addWidget(self.save_btn)
+        row.addStretch()
 
         lay.addLayout(row)
         return g
@@ -583,14 +594,12 @@ class GifForge(QMainWindow):
         else:
             paths = []
 
-        path, _ = QFileDialog.getSaveFileName(self, "Save GIF as", default, filter="GIF (*.gif)")
-        if not path:
-            return
-        if not path.lower().endswith(".gif"):
-            path += ".gif"
+        self._temp_counter += 1
+        tmp_path = os.path.join(self._temp_dir.name, f"preview_{self._temp_counter}.gif")
+        self._default_save_name = os.path.basename(default)
 
         settings = ConversionSettings(
-            output_path=path,
+            output_path=tmp_path,
             width=self._chosen_width(),
             fps=self._chosen_fps(),
             quality=self.quality.value(),
@@ -607,6 +616,7 @@ class GifForge(QMainWindow):
         self.preview.setText("Converting…")
         self.preview_info.setText("")
         self.open_folder_btn.setEnabled(False)
+        self.save_btn.setEnabled(False)
         self.convert_btn.setEnabled(False)
         self.cancel_btn.setEnabled(True)
         self.progress.setValue(0)
@@ -640,6 +650,7 @@ class GifForge(QMainWindow):
         self.progress.setValue(100)
         self._output_path = output_path
         self.open_folder_btn.setEnabled(True)
+        self.save_btn.setEnabled(True)
         self._show_preview(output_path)
 
     def _on_error(self, msg: str):
@@ -681,6 +692,24 @@ class GifForge(QMainWindow):
             self._movie.jumpToFrame(0)
             orig = self._movie.currentPixmap().size()
             self._movie.setScaledSize(self._fit(orig, self._preview_target()))
+
+    def _on_save(self):
+        if not self._output_path or not os.path.isfile(self._output_path):
+            QMessageBox.warning(self, "Nothing to save", "Convert a GIF first.")
+            return
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Save GIF as", self._default_save_name, filter="GIF (*.gif)"
+        )
+        if not path:
+            return
+        if not path.lower().endswith(".gif"):
+            path += ".gif"
+        try:
+            shutil.copyfile(self._output_path, path)
+        except OSError as e:
+            QMessageBox.critical(self, "Save failed", str(e))
+            return
+        self.status.setText("Saved")
 
     def _open_output_folder(self):
         if not self._output_path:
